@@ -28,7 +28,7 @@ pipeline:
     image: chrisns/packer-encrypt-copy
     pull: true
     commands:
-      - export filters="--owner 093401982388 --filters "Name=name,Values=dq-peering-haproxy*""
+      - export filters="--owner 093401982388 --filters "Name=name,Values=dq-peering-haproxy_1.8.9""
       - export aws_id=${PROD_ACC_ID}
       - export aws_key=${PROD_ACC_KEY}
       - export region=eu-west-2
@@ -43,7 +43,7 @@ pipeline:
     image: chrisns/packer-encrypt-copy
     pull: true
     commands:
-      - export filters="--owner 093401982388 --filters "Name=name,Values=dq-peering-haproxy*""
+      - export filters="--owner 093401982388 --filters "Name=name,Values=dq-peering-haproxy_1.8.9""
       - export aws_id=${NOTPROD_ACC_ID}
       - export aws_key=${NOTPROD_ACC_KEY}
       - export region=eu-west-2
