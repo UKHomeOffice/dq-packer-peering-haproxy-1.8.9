@@ -1,5 +1,5 @@
 # dq-packer-peering-haproxy
-This repository creates an AMI in AWS with HAProxy with logging to rsyslog
+This repository creates an AMI in AWS with HAProxy with logging to rsyslog.
 
 ## `packer.json`
 This file contains a wrap up for Ansible script to be run inside small Centos 7.5 machine
