@@ -1,0 +1,221 @@
+---
+
+- name: Pre-reqs for ansible to run
+  hosts: all
+  gather_facts: false
+  become: yes
+  pre_tasks:
+    - raw: test -e /usr/bin/python || ( yum -y update && yum install -y python-minimal)
+
+- name: Install and configure rsyslog service
+  hosts: all
+  become: yes
+  vars:
+    rsyslog_repeated_msg_reduction: "on"
+
+  tasks:
+    - yum: name=rsyslog
+
+    - name: Create rsyslog.conf configuration file
+      copy:
+        src: templates/rsyslog.conf
+        dest: /etc/rsyslog.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    - file:
+        path: /etc/rsyslog.d/
+        owner: root
+        group: root
+        mode: 0644
+        state: directory
+
+    - name: Create 49-haproxy.conf configuration file
+      copy:
+        src: templates/49-haproxy.conf
+        dest: /etc/rsyslog.d/49-haproxy.conf
+        owner: root
+        group: root
+        mode: 0644
+
+    - service:
+        name: rsyslog
+        enabled: yes
+        state: restarted
+
+- name: Transfer and execute HAProxy install script.
+  hosts: all
+  become: yes
+  tasks:
+    - yum: name=gcc
+    - yum: name=pcre-devel
+    - yum: name=openssl-devel
+    - yum: name=zlib-devel
+    - yum: name=wget
+    - yum: name=https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm
+    -  yum: name=python-pip
+
+    - name: Install AWSCLI
+      pip: name=awscli
+
+
+    - name: Get haproxy
+      unarchive:
+        src: https://www.haproxy.org/download/1.8/src/haproxy-1.8.9.tar.gz
+        dest: /usr/src/
+        creates: /usr/src/haproxy-1.8.9
+        remote_src: yes
+
+    - name: Make haproxy
+      make:
+        chdir: /usr/src/haproxy-1.8.9
+        params:
+          TARGET: linux2628
+          USE_PCRE: 1
+          USE_OPENSSL: 1
+          USE_ZLIB: 1
+          USE_LIBCRYPT: 1
+
+    - name: Install haproxy
+      make:
+        chdir: /usr/src/haproxy-1.8.9
+        target: install
+
+    - copy:
+        remote_src: yes
+        src: /usr/src/haproxy-1.8.9/examples/haproxy.init
+        dest: /etc/init.d/haproxy
+        mode: 0755
+
+    - file:
+        src: /usr/local/sbin/haproxy
+        dest: /usr/sbin/haproxy
+        state: link
+
+    - file:
+        path: /etc/haproxy
+        state: directory
+
+    - copy:
+        src: templates/haproxy.cfg
+        dest: /etc/haproxy/haproxy.cfg
+
+    - file:
+        path: /var/lib/haproxy
+        state: directory
+
+    - file:
+        path: /var/lib/haproxy/stats
+        state: touch
+
+    - systemd: daemon_reload=yes
+
+    - user:
+        name: haproxy
+
+    - name: check configuration
+      command: /usr/sbin/haproxy -c -f /etc/haproxy/haproxy.cfg
+
+    - service:
+        name: haproxy
+        enabled: yes
+        state: started
+
+
+    - name: Transfer the script
+      copy: src=templates/gets3content.sh dest=/home/ec2-user mode=0777
+
+    - name: Test haproxy is running and listening
+      shell: echo test >/dev/tcp/localhost/23
+
+    - name: Copy HAProxy config from S3
+      cron:
+        minute: "0"
+        hour: "*"
+        job: /home/ec2-user/gets3content.sh
+
+    - name: Download cloudwatch logs agent
+      get_url:
+        url: https://s3.amazonaws.com//aws-cloudwatch/downloads/latest/awslogs-agent-setup.py
+        dest: /tmp/awslogs-agent-setup.py
+        mode: "+x"
+
+    - name: Cloudwatch logs config
+      copy:
+        dest: /tmp/cwlogs.conf
+        content: |
+          [general]
+          state_file = /var/awslogs/state/agent-state
+          [/var/log/messages]
+          file = /var/log/messages
+          log_group_name = /HAPROXY/messages
+          log_stream_name = {instance_id}
+          datetime_format = %b %d %H:%M:%S
+          [/HAPROXY/cloud-init]
+          file = /var/log/cloud-init.log
+          log_group_name = /HAPROXY/cloud-init
+          log_stream_name = {instance_id}
+          datetime_format = %Y-%m-%d %H:%M:%S,%f
+          [/HAPROXY/cloud-init/output]
+          file = /var/log/cloud-init-output.log
+          log_group_name = /HAPROXY/cloud-init/output
+          log_stream_name = {instance_id}
+          datetime_format = %Y-%m-%d %H:%M:%S,%f
+          [/HAPROXY/cron]
+          file = /var/log/cron
+          log_group_name = /HAPROXY/cron
+          log_stream_name = {instance_id}
+          datetime_format = %Y-%m-%d %H:%M:%S,%f
+          [/HAPROXY/secure]
+          file = /var/log/secure
+          log_group_name = /HAPROXY/secure
+          log_stream_name = {instance_id}
+          datetime_format = %Y-%m-%d %H:%M:%S,%f
+          [/HAPROXY/yum]
+          file = /var/log/yum.log
+          log_group_name = /HAPROXY/yum
+          log_stream_name = {instance_id}
+          datetime_format = %Y-%m-%d %H:%M:%S,%f
+          [/HAPROXY/haproxy]
+          file = /var/log/haproxy.log
+          log_group_name = /HAPROXY/haproxy
+          log_stream_name = {instance_id}
+          datetime_format = %Y-%m-%d %H:%M:%S,%f
+          [/HAPROXY/rsyslog]
+          file = /var/log/rsyslog
+          log_group_name = /HAPROXY/rsyslog
+          log_stream_name = {instance_id}
+          datetime_format = %Y-%m-%d %H:%M:%S,%f
+          [/HAPROXY/syslog]
+          file = /var/log/syslog
+          log_group_name = /HAPROXY/syslog
+          log_stream_name = {instance_id}
+          datetime_format = %Y-%m-%d %H:%M:%S,%f
+
+    - name: Install cloudwatch log agent
+      environment:
+        LC_ALL: C
+      shell: /tmp/awslogs-agent-setup.py --region eu-west-2 --non-interactive -c /tmp/cwlogs.conf
+      args:
+        creates: /var/awslogs/etc/aws.conf
+
+    - name: Copy cloudwatch logs starter
+      copy:
+        src: startcloudwatchlogs.sh
+        dest: /usr/bin/startcloudwatchlogs.sh
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Make Cron Job to start awslogs with right region
+      cron:
+        name: Start awslogs
+        special_time: reboot
+        job: /usr/bin/startcloudwatchlogs.sh
+
+    - name: Set DNS Resolver Options
+      blockinfile:
+        path: /etc/sysconfig/network
+        block: |
+          RES_OPTIONS="rotate timeout:1 attempts:1"
