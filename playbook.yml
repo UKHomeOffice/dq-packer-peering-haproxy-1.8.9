@@ -150,47 +150,47 @@
           [/var/log/messages]
           file = /var/log/messages
           log_group_name = /HAPROXY/messages
-          log_stream_name = {instance_id}
+          log_stream_name = {hostname}
           datetime_format = %b %d %H:%M:%S
           [/HAPROXY/cloud-init]
           file = /var/log/cloud-init.log
           log_group_name = /HAPROXY/cloud-init
-          log_stream_name = {instance_id}
+          log_stream_name = {hostname}
           datetime_format = %Y-%m-%d %H:%M:%S,%f
           [/HAPROXY/cloud-init/output]
           file = /var/log/cloud-init-output.log
           log_group_name = /HAPROXY/cloud-init/output
-          log_stream_name = {instance_id}
+          log_stream_name = {hostname}
           datetime_format = %Y-%m-%d %H:%M:%S,%f
           [/HAPROXY/cron]
           file = /var/log/cron
           log_group_name = /HAPROXY/cron
-          log_stream_name = {instance_id}
+          log_stream_name = {hostname}
           datetime_format = %Y-%m-%d %H:%M:%S,%f
           [/HAPROXY/secure]
           file = /var/log/secure
           log_group_name = /HAPROXY/secure
-          log_stream_name = {instance_id}
+          log_stream_name = {hostname}
           datetime_format = %Y-%m-%d %H:%M:%S,%f
           [/HAPROXY/yum]
           file = /var/log/yum.log
           log_group_name = /HAPROXY/yum
-          log_stream_name = {instance_id}
+          log_stream_name = {hostname}
           datetime_format = %Y-%m-%d %H:%M:%S,%f
           [/HAPROXY/haproxy]
           file = /var/log/haproxy.log
           log_group_name = /HAPROXY/haproxy
-          log_stream_name = {instance_id}
+          log_stream_name = {hostname}
           datetime_format = %Y-%m-%d %H:%M:%S,%f
           [/HAPROXY/rsyslog]
           file = /var/log/rsyslog
           log_group_name = /HAPROXY/rsyslog
-          log_stream_name = {instance_id}
+          log_stream_name = {hostname}
           datetime_format = %Y-%m-%d %H:%M:%S,%f
           [/HAPROXY/syslog]
           file = /var/log/syslog
           log_group_name = /HAPROXY/syslog
-          log_stream_name = {instance_id}
+          log_stream_name = {hostname}
           datetime_format = %Y-%m-%d %H:%M:%S,%f
 
     - name: Install cloudwatch log agent
