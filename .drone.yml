@@ -20,9 +20,13 @@ pipeline:
     commands:
       - export HOME=/home/packer
       - packer build packer.json
+      - export aws_access_key_id=$$AWS_ACCESS_KEY_ID
+      - export aws_secret_access_key=$$AWS_SECRET_ACCESS_KEY
+    secrets:
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
     when:
       event: push
-      branch: master
 
   packer-copy-prod:
     image: chrisns/packer-encrypt-copy
@@ -35,6 +39,9 @@ pipeline:
       - export HOME=/home/packer
       - cd /home/packer
       - ./build.sh
+    secrets:
+      - PROD_ACC_ID
+      - PROD_ACC_KEY
     when:
       event: push
       branch: master
@@ -50,6 +57,9 @@ pipeline:
       - export HOME=/home/packer
       - cd /home/packer
       - ./build.sh
+    secrets:
+      - NOTPROD_ACC_ID
+      - NOTPROD_ACC_KEY
     when:
       event: push
       branch: master
