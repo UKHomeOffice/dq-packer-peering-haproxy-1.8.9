@@ -131,7 +131,7 @@
 
     - name: Copy HAProxy config from S3
       cron:
-        minute: "0"
+        minute: "*"
         hour: "*"
         job: /home/ec2-user/gets3content.sh
 
